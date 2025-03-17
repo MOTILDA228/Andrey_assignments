@@ -1,32 +1,14 @@
 from itertools import product, permutations
-# первая задача весьма понравилась, особенно (неудачные) попытки решить как комбинаторику, однако
-# условия слегка неясны, ибо палиндром может быть и однозначным, и конкретики насчёт количества разрядов нет
-# я добавил условие, гарантирующее наличие 27 разрядов, но не столь в нём уверен
+from functools import lru_cache
 
 def ex1():
-    alphabet = '01234567' # на мой взгляд, так будет удобнее, чем оперировать с восьмеричными числами
-    # насчёт оптимизированности такого метода есть огроомные сомнения
-    numbers = list(product(alphabet, repeat = 27)) # перебор всех восьмеричных чисел от '0'*27 до '7'*27
-    summary = 0 # счётчик количества подходящих нам чисел
-    for counter in range (0, len(numbers)):
-        singles = 0 # счётчик количества чисел без пары
-        line = ''.join(numbers[counter]) # превращение списка в строку
-        if line[0] == '0': # проверка количества значащих разрядов (если 1 разряд - 0, их меньше 27)
-            None
-        if line.count('0') > 25: # достаточно спорное условие. в условиях задачи не сказано, 
-            # однако, скорее всего, подразумевается, что палиндром тоже должен быть 27-значным 
-            # и имеющим только значащие разряды. в таком случае, нулей должно быть не более 25,
-            # иначе первые 13 разрядов будут гарантированно незначащими (т.к. они парные с последними)
-            # в ином случае это условие следует просто убрать
-            None
-        else:
-            for figure in alphabet: 
-                if figure in line: # проверка на наличие цифры в числе
-                    if line.count(figure) % 2 == 1: # определение цифр без пары
-                        singles +=1
-            if singles < 2: # проверка на количество цифр без пары, если их > 1 (центр) - не подходит
-                summary += 1
-    print(summary%(10**9 + 7)) # я не имею ни малейшего желания запускать это (думаю, сомнения оправдались)
+    @lru_cache(maxsize=None)
+    def f(s, l):
+        if l == 0:
+            return bin(s).count('1') <= 1
+        return sum(f(s ^ (1 << x), l - 1) for x in range(8))
+    result = (f(0, 27) - f(1, 26)) % (10**9 + 7)
+    print(result)
 def ex2():
     dictofnumbers = {} # словарь, где значение - число, а ключ - количество простых
     for number in range(100, 1000):
@@ -43,34 +25,29 @@ def ex2():
         dictofnumbers.update({primes: number}) # добавление в словарь
     print(dictofnumbers.get(max(dictofnumbers.keys())))
 def ex3():
-    def inc(x): # воспроизведение функций
-        x += 1
-        return x
+    # Функция для увеличения числа на 1
+    def inc(x):
+        return x + 1
+
+    # Функция для вычисления суммы делителей числа
     def sumofdividers(x):
-        var = 0
-        for num in range(1, (x+1)):
-            if x % num == 0:
-                var += num
-        x = var
-        return x
-    book = []    
-    strings = []
-    y = list(product('01', repeat = 12))
-    for vars in y:
-        strings.append(''.join(vars)) 
-    for elem in strings:
-        x = 2
-        match = '' # уже исполненные ходы 
-        for figure in elem: # посимвольная проверка с выбором функции
-            if x < 24:
-                match += figure
-                if figure == '0':
-                    x = inc(x)
-                else:
-                    x = sumofdividers(x)
-            if x == 24 and book.count(match) == 0: # проверка на наличие аналогичных случаев в прошлом
-                book.append(match)
-    print(len(book))
+        if x == 0:
+            return 0
+        return sum(num for num in range(1, x + 1) if x % num == 0)
+
+    # Мемоизация для хранения количества путей до каждого числа
+    @lru_cache(maxsize=None)
+    def count_paths(current, target):
+        if current == target:
+            return 1  # Нашли один путь
+        if current > target:
+            return 0  # Превысили целевое число, путь не подходит
+        # Рекурсивно считаем пути для обеих команд
+        return count_paths(inc(current), target) + count_paths(sumofdividers(current), target)
+
+    # Вычисляем количество путей от 2 до 24
+    result = count_paths(2, 24)
+    print(result)
 def ex4():
     for i in range(10**5,2*10**7): #ограничения обусловлены простыми логическими умозаключениями:
         #нижняя граница - т.к. делитель 22768, а начинается с 1 - больше 100000
