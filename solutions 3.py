@@ -1,6 +1,6 @@
 import math
 def ex1(file):
-    x = open((file)).readline()
+    x = open((file)).read()
     op = -1
     mx = 0
     for c in range(0, x.count('(')):
